@@ -1,0 +1,330 @@
+---
+title: "Interference Plotting"
+output: html_document
+---
+
+```{r}
+### LOAD IN PACKAGES
+
+library(tidyverse)
+library(cowplot)
+library(coda)
+library(modelbased)
+library(colorspace)
+library(brms)
+library(ggpubr)
+library(bayesplot)
+library(rlang)
+library(stringr)
+```
+
+```{r}
+### LOAD IN DATA
+load('~/Analysis/Inter_Regression_fits_Revision.RData')
+```
+
+//////////////////////////////////////////////////////////////// PLOTTING FUNCTIONS ////////////////////////////////////////////////
+
+```{r}
+plot_brms_partial_effect <- function(
+    fit1,
+    fit2,
+    data,
+    focal_var,
+    other_var,
+    y_var = "log_fitted_w",
+    group_var = "Dim",
+    x_lab,
+    y_lab,
+    label1 = "2D studies",
+    label2 = "3D studies",
+    color1 = "#0084FF",
+    color2 = "red"
+){
+
+  get_pred_df <- function(fit, data, focal_var, other_var, label){
+
+    newdata <- tibble(
+      !!sym(focal_var) := seq(
+        min(data[[focal_var]], na.rm = TRUE),
+        max(data[[focal_var]], na.rm = TRUE),
+        length.out = 100
+      )
+    )
+
+    newdata[[other_var]] <- median(data[[other_var]], na.rm = TRUE)
+
+    preds <- fitted(fit,
+                    newdata = newdata,
+                    summary = TRUE)
+
+    newdata %>%
+      mutate(
+        fit = preds[, "Estimate"],
+        lower = preds[, "Q2.5"],
+        upper = preds[, "Q97.5"],
+        Model = label
+      )
+  }
+
+  pred1 <- get_pred_df(
+    fit1,
+    filter(data, !!sym(group_var) == 2),
+    focal_var,
+    other_var,
+    label1
+  )
+
+  pred2 <- get_pred_df(
+    fit2,
+    filter(data, !!sym(group_var) == 3),
+    focal_var,
+    other_var,
+    label2
+  )
+
+  plot_data <- bind_rows(pred1, pred2)
+
+  color_values <- setNames(
+    c(color1, color2),
+    c(label1, label2)
+  )
+
+  data <- data %>%
+    mutate(
+      Model = case_when(
+        !!sym(group_var) == 2 ~ label1,
+        !!sym(group_var) == 3 ~ label2
+      )
+    )
+
+  ggplot() +
+
+    geom_point(
+      data = data,
+      aes(
+        x = !!sym(focal_var),
+        y = !!sym(y_var),
+        color = Model
+      ),
+      size = 3,
+      alpha = 0.7
+    ) +
+
+    geom_ribbon(
+      data = plot_data,
+      aes(
+        x = !!sym(focal_var),
+        ymin = lower,
+        ymax = upper,
+        fill = Model
+      ),
+      alpha = 0.2
+    ) +
+
+    geom_line(
+      data = plot_data,
+      aes(
+        x = !!sym(focal_var),
+        y = fit,
+        color = Model,
+        linetype = Model
+      ),
+      linewidth = 1.2
+    ) +
+
+    scale_color_manual(values = color_values) +
+    scale_fill_manual(values = color_values) +
+
+    xlab(x_lab) +
+    ylab(y_lab) +
+
+    theme_cowplot(font_size = 30) +
+    theme(
+      legend.title = element_blank()
+    )
+}
+```
+
+```{r}
+a_w_fullD_plot <- plot_brms_partial_effect(
+  fit1 = fit_a_h_w_2D,
+  fit2 = fit_a_h_w_3D,
+  data = filter(forage_fits_abun, Dim %in% c(2,3)),
+  focal_var = "log_scaled_a",
+  other_var = "log_fitted_h",
+  x_lab = "ln(a)",
+  y_lab = "ln(w)"
+)
+
+
+h_w_fullD_plot <- plot_brms_partial_effect(
+  fit1 = fit_a_h_w_2D,
+  fit2 = fit_a_h_w_3D,
+  data = filter(forage_fits_abun, Dim %in% c(2,3)),
+  focal_var = "log_fitted_h",
+  other_var = "log_scaled_a",
+  x_lab = "ln(h)",
+  y_lab = "ln(w)"
+)
+
+
+w_prey_mass_fullD_plot <- plot_brms_partial_effect(
+  fit1 = fit_w_pred_prey_mass_2D,
+  fit2 = fit_w_pred_prey_mass_3D,
+  data = filter(forage_fits_abun, Dim %in% c(2,3)),
+  focal_var = "log_prey_mass",
+  other_var = "log_pred_mass",
+  x_lab = "ln(prey mass (g))",
+  y_lab = "ln(w)"
+)
+
+w_pred_mass_fullD_plot <- plot_brms_partial_effect(
+  fit1 = fit_w_pred_prey_mass_2D,
+  fit2 = fit_w_pred_prey_mass_3D,
+  data = filter(forage_fits_abun, Dim %in% c(2,3)),
+  focal_var = "log_pred_mass",
+  other_var = "log_prey_mass",
+  x_lab = "ln(pred mass (g))",
+  y_lab = "ln(w)"
+)
+```
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////// SUMMARY DISTRIBUTION PLOTTING ////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+```{r}
+plot_posterior <- function(fit, var = NULL, color = "red", ci = 0.95, show_trace = TRUE) {
+  # Capture model object name for labeling
+  fit_name <- deparse(substitute(fit))
+  
+  # Extract posterior draws
+  draws <- as_draws_df(fit)[[var]]
+  
+  # Compute credible interval
+  ci_bounds <- quantile(draws, probs = c((1 - ci)/2, 1 - (1 - ci)/2))
+  
+  # Posterior histogram with CI lines
+  hist_plot <- mcmc_hist(as.matrix(fit, variable = var)) +
+    geom_vline(xintercept = 0, linetype = 2, linewidth = 1.2, alpha = 0.6) +
+    geom_vline(xintercept = ci_bounds[1], linetype = 2, linewidth = 1.2, alpha = 0.4, color = color) +
+    geom_vline(xintercept = ci_bounds[2], linetype = 2, linewidth = 1.2, alpha = 0.4, color = color) +
+    theme_cowplot(font_size = 18) +
+    labs(
+      title = sprintf("%s", fit_name, var),
+      subtitle = sprintf("95%% CI: [%.3f, %.3f]", ci_bounds[1], ci_bounds[2]),
+      x = "Coefficient value",
+      y = "Density"
+    )
+  
+  # Trace plot (optional)
+  if (show_trace) {
+    trace_plot <- mcmc_trace(as.array(fit, variable = var)) +
+      theme_cowplot(font_size = 18)
+    
+    combined <- plot_grid(hist_plot, trace_plot, ncol = 1, rel_heights = c(1, 1))
+    print(combined)
+    return(invisible(combined))
+  } else {
+    print(hist_plot)
+    return(invisible(hist_plot))
+  }
+}
+```
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////// CHANGE IN W WITH CHANGE IN FR PARS ///////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////// A A A ////////////////////////////////////////////////////////////////////
+
+```{r}
+plot_posterior(fit_a_w_2D, "b_log_scaled_a", show_trace = TRUE)
+
+summary(fit_a_w_2D)
+
+```
+
+```{r}
+
+plot_posterior(fit_a_w_3D, "b_log_scaled_a", show_trace = TRUE)
+
+summary(fit_a_w_3D)
+
+```
+
+/////////////////////////////////////////////////////////////////// H H H ////////////////////////////////////////////////////////////////////
+
+
+```{r}
+plot_posterior(fit_h_w_2D, "b_log_fitted_h", show_trace = TRUE)
+
+summary(fit_h_w_2D)
+
+```
+
+```{r}
+
+plot_posterior(fit_h_w_3D, "b_log_fitted_h", show_trace = TRUE)
+
+summary(fit_h_w_3D)
+
+```
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////// CHANGE IN W WITH CHANGE IN PRED AND PREY MASS ////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+```{r}
+### W VS PREY MASS
+
+plot_posterior(fit_w_prey_mass_2D, "b_log_prey_mass", show_trace = TRUE)
+
+summary(fit_w_prey_mass_2D)
+```
+
+```{r}
+plot_posterior(fit_w_prey_mass_3D, "b_log_prey_mass", show_trace = TRUE)
+
+summary(fit_w_prey_mass_3D)
+
+```
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////// CHANGE IN W WITH CHANGE IN PRED MASS /////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+```{r}
+### W VS PRED MASS
+
+plot_posterior(fit_w_pred_mass_2D, "b_log_pred_mass", show_trace = TRUE)
+
+summary(fit_w_pred_mass_2D)
+```
+
+```{r}
+plot_posterior(fit_w_pred_mass_3D, "b_log_pred_mass", show_trace = TRUE)
+
+summary(fit_w_pred_mass_3D)
+
+```
+
+
+```{r}
+w_v_mass_plot <-  ggarrange(w_pred_mass_fullD_plot, w_prey_mass_fullD_plot, ncol = 2, nrow = 1, legend = "bottom", common.legend = TRUE, align = "hv",  labels = "AUTO", font.label = list(size = 35))
+
+w_v_pars_plot <- ggarrange(a_w_fullD_plot, h_w_fullD_plot,  ncol = 2, nrow = 1, legend = "bottom", common.legend = TRUE, align = "hv", labels = "AUTO", font.label = list(size = 35))
+
+```
+
+
+```{r}
+ggsave("w_v_mass_plot_Revision.png", w_v_mass_plot, width = 16, height = 8, dpi = 300)
+
+ggsave("w_v_pars_plot_Revision.png", w_v_pars_plot, width = 16, height = 8, dpi = 300)
+```
+

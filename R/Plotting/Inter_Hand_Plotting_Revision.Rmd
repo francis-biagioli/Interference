@@ -1,0 +1,440 @@
+---
+title: "Interference Plotting"
+output: html_document
+---
+
+```{r}
+### LOAD IN PACKAGES
+
+library(tidyverse)
+library(cowplot)
+library(coda)
+library(modelbased)
+library(colorspace)
+library(brms)
+library(ggpubr)
+library(bayesplot)
+library(rlang)
+library(stringr)
+```
+
+```{r}
+### LOAD IN DATA
+load('~/Analysis/Inter_Regression_fits_Revision.RData')
+
+wC_ahR_predict <- read.csv('~/Analysis/wC_ahR_predict.csv')
+
+w_ah_post <- read.csv("~/Analysis/w_ah_post.csv")
+
+forage_og <- read.csv("~/FoRAGE_V5_sources_and_meta_inter.csv")
+```
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////// Plotting wC/ahR Values ////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+```{r}
+# Rank C/R by study
+study_names <- forage_og %>%
+  select(Inter_ID, Source_Clean) %>%
+  distinct()
+
+forage_fits_abun_plot <- forage_fits_abun %>%
+  left_join(study_names, by = "Inter_ID") %>%
+  arrange(log_C_R_50) %>%
+  mutate(
+    Source_ord = factor(Source_Clean, levels = Source_Clean)
+  )
+
+```
+
+```{r}
+#add NAs for stuidies that do not have masses in FoRAGE
+forage_fits_abun_plot <- forage_fits_abun_plot %>%
+  mutate(
+    log_wC_ahR_50 = ifelse(Inter_ID %in% c(14, 25), NA, log_wC_ahR_50),
+    log_wC_ahR_25 = ifelse(Inter_ID %in% c(14, 25), NA, log_wC_ahR_25),
+    log_wC_ahR_75 = ifelse(Inter_ID %in% c(14, 25), NA, log_wC_ahR_75),
+    log_wC_ahR_5  = ifelse(Inter_ID %in% c(14, 25), NA, log_wC_ahR_5),
+    log_wC_ahR_95 = ifelse(Inter_ID %in% c(14, 25), NA, log_wC_ahR_95)
+  )
+```
+
+```{r}
+# Find last study with log(C/R) < 0
+crossover_index <- max(
+  which(!is.na(forage_fits_abun_plot$log_C_R_50) &
+        forage_fits_abun_plot$log_C_R_50 < 0)
+)
+
+crossover_y <- crossover_index + 0.5
+```
+
+```{r}
+#Set x lims for wC/ahR plot
+xlims_wC_ahR <- c(-11, 12)
+```
+
+```{r}
+#Make forest Plot
+wC_ahR_rank_plot <- ggplot(forage_fits_abun_plot,
+       aes(y = Source_ord, x = log_wC_ahR_50)) +
+
+  # 10–90% CI
+  geom_segment(aes(
+    x = log_wC_ahR_5,
+    xend = log_wC_ahR_95,
+    yend = Source_ord
+  ),
+  linewidth = 0.8,
+  alpha = 0.6) +
+
+  # 25–75% CI rectangle
+  geom_rect(aes(
+    ymin = as.numeric(Source_ord) - 0.35,
+    ymax = as.numeric(Source_ord) + 0.35,
+    xmin = log_wC_ahR_25,
+    xmax = log_wC_ahR_75,
+    fill = Pred_group_1
+  ),
+  #fill = "darkgrey",
+  alpha = 0.8,
+  inherit.aes = FALSE) +
+  
+  scale_fill_manual(
+  values = c(
+    "Insect" = "#1b9e77",
+    "Crustacean" = "#7570b3",
+    "Fish" = "#d95f02",
+    "Arachnid" = "#e7298a"
+  ),
+  name = "Predator taxon"
+) +
+
+  # Median
+  geom_point(size = 2.5) +
+
+  # Vertical reference: wC/ahR = 1
+  geom_vline(xintercept = 0, linetype = 2, linewidth = 2, alpha = 0.8) +
+
+  # Horizontal crossover line: C/R = 1
+  geom_hline(
+    yintercept = crossover_y,
+    linetype = 2,
+    linewidth = 2,
+    alpha = 0.8
+  ) +
+
+  labs(
+    #y = "Studies Ranked by Median log(C/R)",
+    y= NULL,
+    x = "ln(wC/ahR)"
+    
+  ) +
+  scale_x_continuous(limits = xlims_wC_ahR) +
+  scale_y_discrete(labels = NULL) +
+  theme_cowplot(font_size = 40)
+
+```
+
+```{r}
+wC_ahR_rank_plot <- wC_ahR_rank_plot +
+  theme(
+    axis.text.y  = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank()
+  )
+
+wC_ahR_rank_plot <- wC_ahR_rank_plot +
+  theme(
+    plot.margin = margin(
+      t = 5,
+      r = 5,
+      b = 5,
+      l = 0
+    )
+  )
+```
+
+
+```{r}
+#summary data from Forest plot
+
+summary_IQR_wC_ahR <- forage_fits_abun_plot %>%
+  summarise(
+    n_studies = n(),
+
+    n_median_greater_0 = sum(log_wC_ahR_50 > 0, na.rm = TRUE),
+    n_50CI_no_overlap_0 = sum(log_wC_ahR_25 > 0 & log_wC_ahR_75 > 0, na.rm = TRUE),
+    n_90CI_no_overlap_0 = sum(log_wC_ahR_5 > 0 & log_wC_ahR_95 > 0, na.rm = TRUE),
+
+    percent_median_greater_0 =
+      100 * mean(log_wC_ahR_50 > 0, na.rm = TRUE),
+
+    percent_50CI_no_overlap_0 =
+      100 * mean(log_wC_ahR_25 > 0 & log_wC_ahR_75 > 0, na.rm = TRUE),
+
+    percent_90CI_no_overlap_0 =
+      100 * mean(log_wC_ahR_5 > 0 & log_wC_ahR_95 > 0, na.rm = TRUE)
+  )
+
+```
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////// Plotting w/ah Values ////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+```{r}
+Inter_ID <- w_ah_post[, 1]
+w_ah_draws <- w_ah_post[, -1]   # rows = studies, cols = iterations
+
+```
+
+```{r}
+forage_fits_wah <- data.frame(
+  Inter_ID = Inter_ID,
+  log_w_ah_5 = apply(log(w_ah_draws), 1, quantile, probs = 0.05, na.rm = TRUE),
+  log_w_ah_25 = apply(log(w_ah_draws), 1, quantile, probs = 0.25, na.rm = TRUE),
+  log_w_ah_50 = apply(log(w_ah_draws), 1, quantile, probs = 0.50, na.rm = TRUE),
+  log_w_ah_75 = apply(log(w_ah_draws), 1, quantile, probs = 0.75, na.rm = TRUE),
+  log_w_ah_95 = apply(log(w_ah_draws), 1, quantile, probs = 0.95, na.rm = TRUE)
+)
+
+```
+
+
+```{r}
+forage_fits_wah_CR <- forage_fits_wah %>%
+  left_join(
+    forage_fits_abun %>% 
+      select(Inter_ID, log_C_R_50, Pred_group_1),
+    by = "Inter_ID"
+  )
+
+```
+
+```{r}
+
+forage_fits_wah_plot <- forage_fits_wah_CR %>%
+  filter(!Inter_ID %in% c(15, 38)) %>%
+  left_join(study_names, by = "Inter_ID") %>%
+  arrange(log_C_R_50) %>%
+  mutate(
+    Source_ord = factor(
+      paste0(Source_Clean, "_", row_number()),
+      levels = paste0(Source_Clean, "_", row_number())
+    )
+  )
+
+```
+
+```{r}
+crossover_index <- max(
+  which(forage_fits_wah_plot$log_C_R_50 < 0)
+)
+
+crossover_y <- crossover_index + 0.5
+```
+
+```{r}
+#Set x lims for w/ah plot
+xlims_wah <- c(-5.2, 13.5)
+```
+
+```{r}
+w_ah_rank_plot <- ggplot(
+  forage_fits_wah_plot,
+  aes(y = Source_ord, x = log_w_ah_50)
+) +
+
+  geom_segment(aes(
+    x = log_w_ah_5,
+    xend = log_w_ah_95,
+    yend = Source_ord
+  ),
+  linewidth = 0.8,
+  alpha = 0.6) +
+
+  geom_rect(aes(
+    ymin = as.numeric(Source_ord) - 0.35,
+    ymax = as.numeric(Source_ord) + 0.35,
+    xmin = log_w_ah_25,
+    xmax = log_w_ah_75,
+    fill = Pred_group_1
+  ),
+  #fill = "darkgrey",
+  alpha = 0.8,
+  inherit.aes = FALSE) +
+  
+  scale_fill_manual(
+  values = c(
+    "Insect" = "#1b9e77",
+    "Crustacean" = "#7570b3",
+    "Fish" = "#d95f02",
+    "Arachnid" = "#e7298a"),
+  name = "Predator taxon") +
+
+  geom_point(size = 2.5) +
+
+  geom_vline(xintercept = 0, linetype = 2, linewidth = 2, alpha = 0.8) +
+
+  geom_hline(
+    yintercept = crossover_y,
+    linetype = 2,
+    linewidth = 2,
+    alpha = 0.8
+  ) +
+  
+  scale_y_discrete(
+    labels = forage_fits_wah_plot$Source_Clean
+  ) +
+
+  scale_x_continuous(
+    limits = xlims_wah,
+    expand = c(0, 0)
+  ) +
+
+  labs(
+    y = "Studies Ranked by Median ln(C/R)",
+    x = "ln(w/ah)"
+  ) +
+  theme_cowplot(font_size = 40) +
+  theme(axis.text.y = element_text(size = 20))
+
+```
+
+
+
+
+```{r}
+summary_IQR_w_ah <- forage_fits_wah_plot %>%
+  summarise(
+    n_studies = n(),
+
+    # Medians
+    n_median_greater_0 = sum(log_w_ah_50 > 0),
+    percent_median_greater_0 = 100 * mean(log_w_ah_50 > 0),
+
+    # 50% credible interval (IQR)
+    n_50CI_no_overlap_0 = sum(log_w_ah_25 > 0 & log_w_ah_75 > 0),
+    percent_50CI_no_overlap_0 = 100 * mean(log_w_ah_25 > 0 & log_w_ah_75 > 0),
+
+    # 80% credible interval (10–90%)
+    n_90CI_no_overlap_0 = sum(log_w_ah_5 > 0 & log_w_ah_95 > 0),
+    percent_90CI_no_overlap_0 = 100 * mean(log_w_ah_5 > 0 & log_w_ah_95 > 0)
+  )
+
+```
+
+```{r}
+taxa_boxplot_wCahR <- ggplot(
+  forage_fits_abun_plot,
+  aes(
+    x = Pred_group_1,
+    y = log_wC_ahR_50,
+    fill = Pred_group_1
+  )
+) +
+  geom_boxplot(
+    outlier.shape = NA,
+    alpha = 0.6
+  ) +
+  geom_jitter(
+    aes(color = Pred_group_1),
+    width = 0.15,
+    size = 3,
+    alpha = 0.8
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Insect" = "#1b9e77",
+      "Crustacean" = "#7570b3",
+      "Fish" = "#d95f02",
+      "Arachnid" = "#e7298a"
+    ),
+    name = "Predator taxon"
+  ) +
+  scale_color_manual(
+    values = c(
+      "Insect" = "#1b9e77",
+      "Crustacean" = "#7570b3",
+      "Fish" = "#d95f02",
+      "Arachnid" = "#e7298a"
+    ),
+    guide = "none"
+  ) +
+  theme_cowplot()
+  
+```
+
+```{r}
+taxa_boxplot_wah <- ggplot(
+  forage_fits_wah_CR,
+  aes(
+    x = Pred_group_1,
+    y = log_w_ah_50,
+    fill = Pred_group_1
+  )
+) +
+  geom_boxplot(
+    outlier.shape = NA,
+    alpha = 0.6
+  ) +
+  geom_jitter(
+    aes(color = Pred_group_1),
+    width = 0.15,
+    size = 3,
+    alpha = 0.8
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Insect" = "#1b9e77",
+      "Crustacean" = "#7570b3",
+      "Fish" = "#d95f02",
+      "Arachnid" = "#e7298a"
+    ),
+    name = "Predator taxon"
+  ) +
+  scale_color_manual(
+    values = c(
+      "Insect" = "#1b9e77",
+      "Crustacean" = "#7570b3",
+      "Fish" = "#d95f02",
+      "Arachnid" = "#e7298a"
+    ),
+    guide = "none"
+  ) +
+  theme_cowplot()
+```
+
+
+
+```{r}
+
+forrest_plot_full <- ggarrange(
+  w_ah_rank_plot,
+  wC_ahR_rank_plot,
+  ncol = 2,
+  nrow = 1,
+  widths = c(1.5, 1),
+  common.legend = TRUE,
+  legend = "bottom",
+  labels = "AUTO",
+  font.label = list(size = 35)
+)
+```
+
+
+```{r}
+ggsave("~/Plotting/forrest_plot_full.png", forrest_plot_full, width = 30, height = 15, dpi = 300)
+
+#ggsave("forrest_plot_empty_present.png", forrest_plot_full_empty[1], width = 30, height = 16, dpi = 300)
+
+#ggsave("forrest_plot_half_empty_present.png", forrest_plot_half_empty[1], width = 30, height = 16, dpi = 300)
+
+#ggsave("forrest_plot_full_present.png", forrest_plot_full[1], width = 30, height = 16, dpi = 300)
+
+
+```
+
+
