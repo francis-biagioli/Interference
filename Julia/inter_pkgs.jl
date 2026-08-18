@@ -1,0 +1,17 @@
+using Pkg
+
+Pkg.add("DataFrames")
+Pkg.add("CSV")
+Pkg.add("Statistics")
+Pkg.add("Distributions")
+Pkg.add("Turing")
+Pkg.add("StatsPlots")
+Pkg.add("Plots")
+Pkg.add("LsqFit")
+Pkg.add("Roots")
+Pkg.add("LambertW")
+Pkg.add("PlotlyJS")
+Pkg.add("StatsBase")
+Pkg.add("MCMCChains")
+Pkg.add("GLM")
+Pkg.add("StatsModels")
