@@ -1,0 +1,93 @@
+---
+title: "Interference_Dataframe"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(cowplot)
+library(coda)
+library(modelbased)
+library(colorspace)
+library(brms)
+```
+
+READ IN FoRAGE DATA AND JULIA OUTPUT
+
+```{r}
+
+FORAGE_CURVES <- read_csv("~/R/FoRAGE_db_V5_Dec_20_2024_original_curves.csv")
+FORAGE_CURVES <- as.data.frame(FORAGE_CURVES)
+
+FORAGE_META <- read_csv("~/R/FoRAGE_V5_sources_and_meta_inter.csv")
+FORAGE_META <- as.data.frame(FORAGE_META)
+
+Fit_pars <- read.csv("~/Julia/Inter_fitted_parameters_Revision.csv")
+Fit_pars <- as.data.frame(Fit_pars)
+```
+
+
+```{r}
+FORAGE_META_unique <- FORAGE_META %>%
+  select(
+    Inter_ID, 
+    FoRAGE_ID = FoRAGE_ID,
+    Dim = Dim,
+    Num_Pred = PredPerArena,
+    Pred_or_Para = Predation_or_Parasitism,
+    Habitat = Habitat,
+    Pred_Vert_Invert = Vert_invert_pred,
+    Pred_group_1 = Major_grouping_1_pred,
+    Pred_mass = Predator_mass_mg,
+    Pred_mass_ID = Predator_mass_identifier,
+    Prey_Vert_Invert = Vert_invert_prey,
+    Prey_group_1 = Major_grouping_1_prey,
+    Prey_mass = Prey_mass_mg,
+    Prey_mass_ID = Prey_mass_identifier,
+    `2D_Arena_size` = `2D_Arena size_cm2`,
+    `3D_Arena_size` = `3D_arena_size_cm3`
+  ) %>%
+  distinct(Inter_ID, .keep_all = TRUE)
+
+```
+
+```{r}
+FORAGE_META_unique <- FORAGE_META_unique %>%
+  mutate(
+    `2.5D_Arena_size` = ifelse(
+      Dim == 2.5,
+      case_when(
+        !is.na(`2D_Arena_size`) ~ `2D_Arena_size`^(2.5/2),
+        !is.na(`3D_Arena_size`) ~ `3D_Arena_size`^(2.5/3),
+        TRUE ~ NA_real_
+      ),
+      NA_real_
+    )
+  )
+
+```
+
+
+```{r}
+FORAGE_META_unique <- FORAGE_META_unique %>%
+  mutate(
+    Arena_size_general = case_when(
+      Dim == 2   ~ `2D_Arena_size`,
+      Dim == 2.5 ~ `2.5D_Arena_size`,
+      Dim == 3   ~ `3D_Arena_size`,
+      TRUE ~ NA_real_
+    )
+  )
+```
+
+
+```{r}
+Fit_pars_meta <- left_join(Fit_pars, FORAGE_META_unique, by = "Inter_ID")
+```
+
+```{r}
+write.csv(Fit_pars_meta, "FoRAGE_Inter_Revision.csv", row.names = FALSE)
+```
+
+
+

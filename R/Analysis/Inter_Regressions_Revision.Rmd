@@ -1,0 +1,206 @@
+---
+title: "Inter_Analyis"
+date: "2025-05-29"
+output: html_document
+---
+
+```{r}
+### LOAD IN PACKAGES
+
+library(tidyverse)
+library(cowplot)
+library(coda)
+library(modelbased)
+library(colorspace)
+library(brms)
+library(ggpubr)
+library(bayesplot)
+library(rlang)
+library(stringr)
+```
+
+```{r}
+### LOAD IN DATA
+
+#FORAGE W/OUT ABUNDANCES FROM MASSES
+forage_og <- read.csv("~/Analysis/FoRAGE_Inter_Revision.csv")
+
+
+#FORAGE WITH ABUNDANCES FROM MASSES
+forage_fits_abun <- read_csv("~/Analysis/forage_modified_Revision.csv")
+
+#REMOVE PROBLEM DATASETS (poor fits to data)
+forage_fits_abun <- forage_fits_abun %>%
+                 #filter(Dim != 2.5) %>%
+                subset(!Inter_ID %in% c(15)) %>%
+                filter(fitted_w > 0)
+
+#ADD STUDIES THAT DID NOT HAVE MASS
+
+forage_fits_abun <- bind_rows(
+  forage_fits_abun,
+  forage_og %>% 
+    filter(Inter_ID %in% c(14, 25)))
+
+```
+
+```{r}
+### Add new columns with variables in log scale for linear regressions
+
+forage_fits_abun <- forage_fits_abun %>%
+  mutate(
+    log_scaled_a = log(scaled_a),
+    log_fitted_h = log(fitted_h),
+    log_fitted_w = log(fitted_w),
+    log_prey_mass = log(Prey_mass),
+    log_pred_mass = log(Pred_mass),
+    log_C_R_5 = log(C_R_5),
+    log_C_R_25 = log(C_R_25),
+    log_C_R_50 = log(C_R_50),
+    log_C_R_75 = log(C_R_75),
+    log_C_R_95 = log(C_R_95),
+    log_wC_ahR_5 = log(wC_ahR_5),
+    log_wC_ahR_25 = log(wC_ahR_25),
+    log_wC_ahR_50 = log(wC_ahR_50),
+    log_wC_ahR_75 = log(wC_ahR_75),
+    log_wC_ahR_95 = log(wC_ahR_95),
+  )
+```
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////REGRESSIONS //////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////// CHANGE IN W WITH CHANGE IN FR PARS //////////////////////////////////////////////////
+
+
+```{r}
+### REVISION FITS - COMBINE A AND H FITS TO DISENTANGLE DIRECT EFFECTS OF A AND H ###
+
+fit_a_h_w_2D <- brm(log_fitted_w ~ log_scaled_a + log_fitted_h, 
+                   data = filter(forage_fits_abun, Dim %in% c(2)), 
+                   chains = 4,
+                   iter = 10000,
+                   warmup = floor(10000/2))
+
+fit_a_h_w_3D <- brm(log_fitted_w ~ log_scaled_a + log_fitted_h, 
+                   data = filter(forage_fits_abun, Dim %in% c(3)), 
+                   chains = 4,
+                   iter = 10000,
+                   warmup = floor(10000/2))
+```
+
+```{r}
+summary(fit_a_h_w_2D)
+summary(fit_a_h_w_3D)
+
+```
+
+
+
+//////////////////////////////////////////////// CHANGE IN W WITH CHANGE IN MASS //////////////////////////////////////////////////
+
+
+```{r}
+fit_w_pred_prey_mass_2D <- brm(log_fitted_w ~ log_pred_mass + log_prey_mass, 
+                   data = filter(forage_fits_abun, Dim %in% c(2)), 
+                   chains = 4,
+                   iter = 10000,
+                   warmup = floor(10000/2))
+
+fit_w_pred_prey_mass_3D <- brm(log_fitted_w ~ log_pred_mass + log_prey_mass, 
+                   data = filter(forage_fits_abun, Dim %in% c(3)), 
+                   chains = 4,
+                   iter = 10000,
+                   warmup = floor(10000/2))
+```
+
+```{r}
+summary(fit_w_pred_prey_mass_2D)
+summary(fit_w_pred_prey_mass_3D)
+
+```
+
+//////////////////////////////////////////////// SENSITIVITY ANALYSIS FOR OUTLIER POINTS //////////////////////////////////////////////////
+
+
+```{r}
+#There appear to be outlier points above log(w) =15 and below log(w) = 0
+  # lets figure out which studies they correspond to and if they affect the outcomes of regressions
+
+
+outliers <- forage_fits_abun %>%
+  filter(log_fitted_w > 15 | log_fitted_w < 0, Dim == 3) %>%
+  pull(Inter_ID)
+
+outliers_high <- forage_fits_abun %>%
+  filter(log_fitted_w > 15) %>%
+  pull(Inter_ID)
+
+outliers_low <- forage_fits_abun %>%
+  filter(log_fitted_w < 0) %>%
+  pull(Inter_ID)
+```
+
+```{r}
+fit_a_h_w_2D_no_out <- brm( log_fitted_w ~ log_scaled_a + log_fitted_h,
+  data = forage_fits_abun %>%
+    filter(Dim == 2,
+           !(Inter_ID %in% outliers)),
+  chains = 4,
+  iter = 10000,
+  warmup = floor(10000/2)
+)
+
+fit_a_h_w_3D_no_out <- brm( log_fitted_w ~ log_scaled_a + log_fitted_h,
+  data = forage_fits_abun %>%
+    filter(Dim == 3,
+           !(Inter_ID %in% outliers)),
+  chains = 4,
+  iter = 10000,
+  warmup = floor(10000/2)
+)
+```
+
+```{r}
+summary(fit_a_h_w_2D)
+summary(fit_a_h_w_2D_no_out)
+
+
+summary(fit_a_h_w_3D)
+summary(fit_a_h_w_3D_no_out)
+```
+
+```{r}
+fit_w_pred_prey_mass_2D_no_out <- brm(log_fitted_w ~ log_pred_mass + log_prey_mass,
+  data = forage_fits_abun %>%
+    filter(Dim == 2,
+           !(Inter_ID %in% outliers)),
+  chains = 4,
+  iter = 10000,
+  warmup = floor(10000/2)
+)
+
+fit_w_pred_prey_mass_3D_no_out <- brm(log_fitted_w ~ log_pred_mass + log_prey_mass,
+  data = forage_fits_abun %>%
+    filter(Dim == 3,
+           !(Inter_ID %in% outliers)),
+  chains = 4,
+  iter = 10000,
+  warmup = floor(10000/2)
+)
+```
+
+```{r}
+summary(fit_w_pred_prey_mass_2D)
+summary(fit_w_pred_prey_mass_2D_no_out)
+
+
+summary(fit_w_pred_prey_mass_3D)
+summary(fit_w_pred_prey_mass_3D_no_out)
+```
+
+
+```{r}
+save.image(file = '~/Analysis/Inter_Regression_fits_Revision.RData')
+```
