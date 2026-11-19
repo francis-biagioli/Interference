@@ -20,7 +20,7 @@ library(stringr)
 
 ```{r}
 ### LOAD IN DATA
-load('~/Analysis/Inter_Regression_fits_Revision.RData')
+load('~/R/Analysis/Inter_Regression_fits_Revision.RData')
 ```
 
 //////////////////////////////////////////////////////////////// PLOTTING FUNCTIONS ////////////////////////////////////////////////
