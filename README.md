@@ -171,3 +171,47 @@ Required inputs:
 
 Outputs:
 - Forest plots used in the main text
+
+----------------------------------------------------------------------
+Required Package Information 
+----------------------------------------------------------------------
+Julia:
+- `CSV` (0.10.16)
+- `DataFrames` (1.8.2)
+- `Distributions` (0.25.129)
+- `GLM` (1.9.5)
+- `LambertW` (1.0.0)
+- `LsqFit` (0.16.1)
+- `MCMCChains` (7.7.0)
+- `Plots` (1.41.6)
+- `PlotlyJS` (0.18.18)
+- `Roots` (3.0.0)
+- `Statistics` (1.11.1)
+- `StatsBase` (0.34.12)
+- `StatsModels` (0.7.10)
+- `StatsPlots` (0.15.8)
+- `Turing` (0.45.0)
+
+R:
+- `bayesplot` (1.11.1)
+- `brms` (2.22.0)
+- `coda` (0.19-4.1)
+- `colorspace` (2.1-0)
+- `cowplot` (1.2.0)
+- `dplyr` (1.1.4)
+- `forcats` (1.0.0)
+- `ggplot2` (4.0.1)
+- `ggpubr` (0.6.2)
+- `lubridate` (1.9.5)
+- `modelbased` (0.8.8)
+- `purrr` (1.2.2)
+- `Rcpp` (1.0.12)
+- `readr` (2.2.0)
+- `rlang` (1.3.0)
+- `stringr` (1.6.0)
+- `tibble` (3.2.1)
+- `tidyr` (1.3.1)
+- `tidyverse` (2.0.0)
+
+
+
