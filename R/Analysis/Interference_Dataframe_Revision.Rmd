@@ -86,7 +86,7 @@ Fit_pars_meta <- left_join(Fit_pars, FORAGE_META_unique, by = "Inter_ID")
 ```
 
 ```{r}
-write.csv(Fit_pars_meta, "~R/FoRAGE_Inter_Revision.csv", row.names = FALSE)
+write.csv(Fit_pars_meta, "~/R/FoRAGE_Inter_Revision.csv", row.names = FALSE)
 ```
 
 
