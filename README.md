@@ -69,7 +69,7 @@ Required inputs:
 ----------------------------------------------------------------------
 STEP 3: Estimate mass–abundance scaling relationships
 
-File: /Mass-Abundance/MassAbundance_BayesianReg.R
+File: /Mass-Abundance/MassAbundance_BayesianRevision.R
 
 - Fits Bayesian log–log mass–abundance scaling relationships used in downstream analyses.
 
