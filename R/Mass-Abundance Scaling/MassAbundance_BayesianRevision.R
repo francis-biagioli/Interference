@@ -1,7 +1,6 @@
 #####################################################################################
 ### Bayesian reanalysis of Hatton et al. 2019. PNAS Mass-Abundance Scaling
 #####################################################################################
-### CODE WRITTEN BY DR. KYLE COBLENTZ
 
 ### load packages
 
@@ -9,7 +8,7 @@ library(dplyr); library(ggplot2); library(cowplot); library(brms);
 
 ### load data
 
-scale_data <- read.csv('~/Mass Abundance Scaling/AbundanceScaling.csv')
+scale_data <- read.csv('~/R/Mass Abundance Scaling/AbundanceScaling.csv')
 
 ### plot mass-abundance relationship
 
@@ -78,7 +77,7 @@ prokaryote_fit <- brm(formula = log(Density_Nm2) ~ 0 + Intercept + log(Mass_g), 
 
 summary(prokaryote_fit, prob = 0.9)
 
-save.image(file = 'MassAbundanceScaling.RData')
+save.image(file = '~/R/Mass-Abundance Scaling/MassAbundanceScaling.RData')
 
 
 
