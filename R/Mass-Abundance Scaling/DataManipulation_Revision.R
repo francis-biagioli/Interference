@@ -1,8 +1,6 @@
 ###########################################################################################
 ### Cleaning the data to predict functional response parameters
 ###########################################################################################
-#CODE ADAPTED FROM DR. KYLE COBLENTZ 
-
 
 ### load libraries
 
@@ -10,13 +8,13 @@ library(dplyr); library(ggplot2); library(cowplot); library(brms);
 
 ### load bayesian regressions for mass-abundance relationship
 
-load('~/Mass-Abundance Scaling/MassAbundanceScaling.RData')
+load('~/R/Mass-Abundance Scaling/MassAbundanceScaling.RData')
 
 ### need to connect the mass-abundance and metabolic scaling regressions to FoRAGE to get
 
 ### load FoRAGE
 
-forage <- read.csv('~/Analysis/FoRAGE_Inter_Revision.csv', stringsAsFactors = TRUE)
+forage <- read.csv('~/R/Analysis/FoRAGE_Inter_Revision.csv', stringsAsFactors = TRUE)
 
 ### drop rows to not include
 
@@ -162,11 +160,11 @@ forage <- forage %>%
 
 # ### save this data set as a .csv
 
-write.csv(Abundance_prey_full, "~/Mass-Abundance Scaling/Abundance_prey_full.csv", row.names = FALSE)
+write.csv(Abundance_prey_full, "~/R/Mass-Abundance Scaling/Abundance_prey_full.csv", row.names = FALSE)
 
-write.csv(Abundance_pred_full, "~/Mass-Abundance Scaling/Abundance_pred_full.csv", row.names = FALSE)
+write.csv(Abundance_pred_full, "~/R/Mass-Abundance Scaling/Abundance_pred_full.csv", row.names = FALSE)
 
-write.csv(forage, file = '~/Analysis/forage_modified_Revision.csv', row.names = FALSE)
+write.csv(forage, file = '~/R/Analysis/forage_modified_Revision.csv', row.names = FALSE)
 
 
 
