@@ -64,8 +64,10 @@ File: /Analysis/Interference_Dataframe_Revision.Rmd
 
 Required inputs:
 - Inter_fitted_parameters_Revision.csv (from '~/Julia' folder)
+   - Output of Julia fitting code. Contains summary of parameter estimates functional response fitting.    
 - FoRAGE metadata file
-
+   - FoRAGE metadata that contains information about conditions and taxa of each study analyzed.
+ 
 ----------------------------------------------------------------------
 STEP 3: Estimate mass–abundance scaling relationships
 
