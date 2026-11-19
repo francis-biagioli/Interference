@@ -1,5 +1,5 @@
 #Set Directory
-dir = "~Julia/Interference/" 
+dir = "~Julia/" 
 cd(dir)
 
 #Load Packages
