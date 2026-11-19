@@ -63,7 +63,7 @@ File: /Analysis/Interference_Dataframe_Revision.Rmd
 - Combines Julia-derived parameter estimates with FoRAGE metadata.
 
 Required inputs:
-- Inter_fitted_parameters_Revision.csv
+- Inter_fitted_parameters_Revision.csv (from '~/Julia' folder)
 - FoRAGE metadata file
 
 ----------------------------------------------------------------------
