@@ -23,11 +23,11 @@ library(stringr)
 ### LOAD IN DATA
 
 #FORAGE W/OUT ABUNDANCES FROM MASSES
-forage_og <- read.csv("~/Analysis/FoRAGE_Inter_Revision.csv")
+forage_og <- read.csv("~/R/Analysis/FoRAGE_Inter_Revision.csv")
 
 
 #FORAGE WITH ABUNDANCES FROM MASSES
-forage_fits_abun <- read_csv("~/Analysis/forage_modified_Revision.csv")
+forage_fits_abun <- read_csv("~/R/Analysis/forage_modified_Revision.csv")
 
 #REMOVE PROBLEM DATASETS (poor fits to data)
 forage_fits_abun <- forage_fits_abun %>%
@@ -202,5 +202,5 @@ summary(fit_w_pred_prey_mass_3D_no_out)
 
 
 ```{r}
-save.image(file = '~/Analysis/Inter_Regression_fits_Revision.RData')
+save.image(file = '~/R/Analysis/Inter_Regression_fits_Revision.RData')
 ```
