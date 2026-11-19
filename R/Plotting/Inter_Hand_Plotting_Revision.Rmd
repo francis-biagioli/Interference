@@ -20,13 +20,13 @@ library(stringr)
 
 ```{r}
 ### LOAD IN DATA
-load('~/Analysis/Inter_Regression_fits_Revision.RData')
+load('~/R/Analysis/Inter_Regression_fits_Revision.RData')
 
-wC_ahR_predict <- read.csv('~/Analysis/wC_ahR_predict.csv')
+wC_ahR_predict <- read.csv('~/R/Analysis/wC_ahR_predict.csv')
 
-w_ah_post <- read.csv("~/Analysis/w_ah_post.csv")
+w_ah_post <- read.csv("~/R/Analysis/w_ah_post.csv")
 
-forage_og <- read.csv("~/FoRAGE_V5_sources_and_meta_inter.csv")
+forage_og <- read.csv("~/R/FoRAGE_V5_sources_and_meta_inter.csv")
 ```
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -426,14 +426,7 @@ forrest_plot_full <- ggarrange(
 
 
 ```{r}
-ggsave("~/Plotting/forrest_plot_full.png", forrest_plot_full, width = 30, height = 15, dpi = 300)
-
-#ggsave("forrest_plot_empty_present.png", forrest_plot_full_empty[1], width = 30, height = 16, dpi = 300)
-
-#ggsave("forrest_plot_half_empty_present.png", forrest_plot_half_empty[1], width = 30, height = 16, dpi = 300)
-
-#ggsave("forrest_plot_full_present.png", forrest_plot_full[1], width = 30, height = 16, dpi = 300)
-
+ggsave("~/R/Plotting/forrest_plot_full.png", forrest_plot_full, width = 30, height = 15, dpi = 300)
 
 ```
 
