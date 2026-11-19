@@ -8,21 +8,21 @@ library(dplyr); library(ggplot2); library(cowplot); library(brms);
 
 ### load Posteriod distributions of pred and prey abundances
 
-Abundance_prey_full <- as.matrix(read.csv("~/Mass-Abundance Scaling/Abundance_prey_full.csv"))
+Abundance_prey_full <- as.matrix(read.csv("~/R/Mass-Abundance Scaling/Abundance_prey_full.csv"))
 
-Abundance_pred_full <- as.matrix(read.csv("~/Mass-Abundance Scaling/Abundance_pred_full.csv"))
+Abundance_pred_full <- as.matrix(read.csv("~/R/Mass-Abundance Scaling/Abundance_pred_full.csv"))
 
 ### Load in Posterior distributions of parameter estimates from FoRAGE re-fits
 
-w_posterior <- as.matrix(read.csv("~/posterior_w_matrix_Revision.csv"))
+w_posterior <- as.matrix(read.csv("~/Julia/posterior_w_matrix_Revision.csv"))
 
-h_posterior <- as.matrix(read.csv("~/posterior_h_matrix_Revision.csv"))
+h_posterior <- as.matrix(read.csv("~/Julia/posterior_h_matrix_Revision.csv"))
 
-a_posterior <- as.matrix(read.csv("~/posterior_scaled_a_matrix_Revision.csv"))
+a_posterior <- as.matrix(read.csv("~/Julia/posterior_scaled_a_matrix_Revision.csv"))
 
 ### load FoRAGE
 
-forage <- read.csv('~/Analysis/forage_modified_Revision.csv', stringsAsFactors = TRUE)
+forage <- read.csv('~/R/Analysis/forage_modified_Revision.csv', stringsAsFactors = TRUE)
 
 #Remove old C/R and wC/ahR columns IF NEEDED
 #forage <- forage[,-c(28:39)]
@@ -40,7 +40,7 @@ w_ah_posterior <- w_posterior / ah_posterior
 w_ah_posterior <- cbind(Inter_ID = seq_len(nrow(w_ah_posterior)),
                         as.data.frame(w_ah_posterior))
 
-write.csv(w_ah_posterior, "~/Analysis/w_ah_post.csv")
+write.csv(w_ah_posterior, "~/R/Analysis/w_ah_post.csv")
 
 ################################################# Calculate C/R Matrix ################################################# 
 
@@ -99,8 +99,8 @@ forage <- cbind(forage, C_R_ci, wC_ahR_ci)
 
 ################################################# Save FoRAGE file with CI's of Posteriors ################################################# 
 
-write.csv(wC_ahR_predict, file = '~/Analysis/wC_ahR_predict.csv', row.names = FALSE)
+write.csv(wC_ahR_predict, file = '~/R/Analysis/wC_ahR_predict.csv', row.names = FALSE)
 
-write.csv(forage, file = '~/Analysis/forage_modified_Revision.csv', row.names = FALSE)
+write.csv(forage, file = '~/R/Analysis/forage_modified_Revision.csv', row.names = FALSE)
 
 
